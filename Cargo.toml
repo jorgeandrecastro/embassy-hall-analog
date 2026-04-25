@@ -1,0 +1,49 @@
+[package]
+edition = "2024"
+name = "embassy-hall-analog"
+version = "0.1.0"
+authors = ["Jorge Andre Castro <georgeandrec@gmail.com>"]
+build = false
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+description = "Driver async no_std pour capteur à effet Hall linéaire analogique OPEN-SMART (RP2040/RP235x)."
+documentation = "https://docs.rs/embassy-hall-analog"
+readme = "README.md"
+keywords = [
+    "embassy",
+    "hall-effect",
+    "magnetic",
+    "analog",
+    "no-std",
+]
+categories = [
+    "embedded",
+    "no-std",
+    "hardware-support",
+]
+license = "GPL-2.0-or-later"
+repository = "https://github.com/jorgeandrecastro/embassy-hall-analog"
+
+[lib]
+name = "embassy_hall_analog"
+path = "src/lib.rs"
+
+[dependencies.embassy-rp]
+version = ">=0.4, <0.11"
+features = ["unstable-pac"]
+
+[features]
+# Feature par défaut : RP2040 (Pico 1)
+default = ["rp2040"]
+rp2040  = ["embassy-rp/rp2040"]
+rp235x  = ["embassy-rp/rp235xa"]
+
+[profile.release]
+opt-level    = "z"
+lto          = true
+codegen-units = 1
+panic        = "abort"
+strip        = true
