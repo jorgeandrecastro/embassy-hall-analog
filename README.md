@@ -5,7 +5,9 @@
 # embassy-hall-analog
 
 Driver async `no_std` minimaliste pour le **capteur à effet Hall linéaire analogique OPEN-SMART**
-(compatible 49E / SS49E) sur microcontrôleur **RP2040** et **RP235x**, basé sur le framework [Embassy](https://embassy.dev) , ce n'est pas un projet développé par embassy officiel attention!!!.
+(compatible 49E / SS49E) sur microcontrôleur **RP2040** et **RP235x**, basé sur le framework [Embassy](https://embassy.dev).
+
+> ⚠️ Ce projet n'est pas développé par l'équipe officielle Embassy.
 
 ---
 
@@ -39,7 +41,7 @@ Ce driver encapsule la lecture ADC asynchrone Embassy et expose une API simple p
 
 Connexion directe — aucune résistance externe nécessaire (le module est auto-polarisé) :
 
-```
+```text
 Module Hall OPEN-SMART        RP2040 / RP235x
 ──────────────────────        ───────────────
        VCC  ──────────────── 3.3V
@@ -55,30 +57,46 @@ Module Hall OPEN-SMART        RP2040 / RP235x
 
 Ajoutez la dépendance dans votre `Cargo.toml`.
 
-**Pour le RP2040 (Pico 1)  feature `rp2040` activée par défaut :**
+**Pour le RP2040 (Pico 1) — feature `rp2040` activée par défaut :**
 
 ```toml
 [dependencies.embassy-hall-analog]
 version = "0.1.0"
 ```
 
-**Pour le RP235x (Pico 2) désactivez les features par défaut et activez `rp235x` :**
+**Pour le RP2350A (Pico 2 A-step) — désactivez les features par défaut et activez `rp235xa` :**
 
 ```toml
 [dependencies]
-embassy-hall-analog = { version = "0.1.0", default-features = false, features = ["rp235x"] }
+embassy-hall-analog = { version = "0.1.0", default-features = false, features = ["rp235xa"] }
 ```
 
-**Important : Cette crate est compatible avec une large plage de versions (v0.4.0 à v0.10.0+).** Assurez-vous que votre projet utilise une version d'`embassy-rp` incluse dans cette plage.
+**Pour le RP2350B (Waveshare RP2350-PiZero, Pico 2 B-step) — désactivez les features par défaut et activez `rp235xb` :**
+
+```toml
+[dependencies]
+embassy-hall-analog = { version = "0.1.0", default-features = false, features = ["rp235xb"] }
+```
+
+> ⚠️ Ces trois features sont **mutuellement exclusives**. Le build échouera avec un message explicite
+> si zéro ou plusieurs features cibles sont activées simultanément.
 
 ---
 
 ## Features
 
-| Feature    | Description                          | Activée par défaut |
-|------------|--------------------------------------|--------------------|
-| `rp2040`   | Cible RP2040 (Raspberry Pi Pico 1)   | ✓                  |
-| `rp235x`   | Cible RP235x (Raspberry Pi Pico 2)   |                    |
+| Feature   | Description                        | Activée par défaut |
+|-----------|------------------------------------|--------------------|
+| `rp2040`  | Cible RP2040 (Raspberry Pi Pico 1) | ✓                  |
+| `rp235xa` | Cible RP2350 A-step (Pico 2 A)     |                    |
+| `rp235xb` | Cible RP2350 B-step (Pico 2 B)     |                    |
+
+Le point de repos ADC (`ZERO_FIELD_RAW`) est sélectionné **automatiquement** selon la feature compilée :
+
+| Feature             | Résolution | Point de repos |
+|---------------------|-----------|----------------|
+| `rp2040`            | 12 bits   | 2048           |
+| `rp235xa` / `rp235xb` | 14 bits | 8192           |
 
 ---
 
@@ -131,7 +149,8 @@ match sensor.read_polarity(50).await {
 ```
 
 > Le paramètre `deadband` (ici `50` LSB) définit la zone morte autour du point de repos
-> pour éviter les oscillations dues au bruit ADC.
+> pour éviter les oscillations dues au bruit ADC.  
+> Sur RP235x (14 bits), une valeur de `200` LSB est conseillée.
 
 ### Déviation signée
 
@@ -182,16 +201,18 @@ Lit la valeur ADC brute du capteur.
 
 Retourne la polarité détectée : `SouthPole`, `NorthPole`, ou `NoField`.
 
+Le point de repos est sélectionné automatiquement selon la feature compilée  aucun paramètre `zero` à passer.
+
 ### `async fn read_deviation(&mut self, zero: u16) -> i32`
 
 Retourne la déviation signée en LSB par rapport au point de repos fourni.
 
 ### Constantes
 
-| Constante               | Valeur | Description                           |
-|-------------------------|--------|---------------------------------------|
-| `ZERO_FIELD_RAW_12BIT`  | 2048   | Point de repos ADC 12 bits (RP2040)   |
-| `ZERO_FIELD_RAW_14BIT`  | 8192   | Point de repos ADC 14 bits (RP235x)   |
+| Constante              | Valeur | Description                         |
+|------------------------|--------|-------------------------------------|
+| `ZERO_FIELD_RAW_12BIT` | 2048   | Point de repos ADC 12 bits (RP2040) |
+| `ZERO_FIELD_RAW_14BIT` | 8192   | Point de repos ADC 14 bits (RP235x) |
 
 ---
 
@@ -205,103 +226,6 @@ Retourne la déviation signée en LSB par rapport au point de repos fourni.
 
 ---
 
-## Exemple complet : Pico 2040 avec affichage OLED
-
-Utilise [`embassy-ssd1306`](https://crates.io/crates/embassy-ssd1306).
-
-```rust
-#![no_std]
-#![no_main]
-
-use embassy_executor::Spawner;
-use embassy_rp::adc::{Adc, Config as AdcConfig, Channel, InterruptHandler as AdcInterruptHandler};
-use embassy_rp::i2c::{Config as I2cConfig, I2c, Async};
-use embassy_time::{Timer, Duration};
-use embassy_rp::gpio::{Output, Level, Pull};
-use embassy_rp::bind_interrupts;
-use embassy_rp::peripherals::I2C0;
-use embassy_rp::i2c::InterruptHandler as I2cInterruptHandler;
-use embassy_ssd1306::Ssd1306;
-use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::mutex::Mutex;
-use embassy_embedded_hal::shared_bus::asynch::i2c::I2cDevice;
-use embassy_hall_analog::{HallAnalog, MagneticPolarity, ZERO_FIELD_RAW_12BIT};
-use {panic_halt as _, embassy_rp as _};
-
-bind_interrupts!(struct Irqs {
-    I2C0_IRQ      => I2cInterruptHandler<I2C0>;
-    ADC_IRQ_FIFO  => AdcInterruptHandler;
-});
-
-#[embassy_executor::task]
-async fn system_task(
-    mut oled: Ssd1306<I2cDevice<'static, NoopRawMutex, I2c<'static, I2C0, Async>>>,
-    mut hall: HallAnalog<'static>,
-) {
-    if let Ok(_) = oled.init().await {
-        oled.clear();
-        let _ = oled.flush().await;
-    }
-
-    loop {
-        oled.clear();
-        oled.draw_rect(0, 0, 127, 63, true);
-
-        let raw = hall.read_raw().await;
-        let deviation = hall.read_deviation(ZERO_FIELD_RAW_12BIT).await;
-
-        oled.draw_str(10, 1, b"Hall Sensor");
-        oled.draw_str(10, 3, b"Raw :");
-        oled.draw_i16(55, 3, raw as i16);
-        oled.draw_str(10, 5, b"Dev :");
-        oled.draw_i16(55, 5, deviation as i16);
-
-        let polarity = hall.read_polarity(50).await;
-        oled.draw_str(10, 7, b"Field:");
-        match polarity {
-            MagneticPolarity::SouthPole => oled.draw_str(65, 7, b"Sud  "),
-            MagneticPolarity::NorthPole => oled.draw_str(65, 7, b"Nord "),
-            MagneticPolarity::NoField   => oled.draw_str(65, 7, b"None "),
-        }
-
-        let _ = oled.flush().await;
-        Timer::after(Duration::from_millis(500)).await;
-    }
-}
-
-#[embassy_executor::main]
-async fn main(spawner: Spawner) {
-    let p = embassy_rp::init(Default::default());
-
-    // I2C & OLED
-    let mut i2c_config = I2cConfig::default();
-    i2c_config.frequency = 400_000;
-    let i2c_bus = I2c::new_async(p.I2C0, p.PIN_5, p.PIN_4, Irqs, i2c_config);
-
-    static I2C_BUS: static_cell::StaticCell<Mutex<NoopRawMutex, I2c<'static, I2C0, Async>>>
-        = static_cell::StaticCell::new();
-    let i2c_mutex = I2C_BUS.init(Mutex::new(i2c_bus));
-
-    let i2c_dev_oled = I2cDevice::new(i2c_mutex);
-    let oled = Ssd1306::new(i2c_dev_oled, 0x3C);
-    let mut led = Output::new(p.PIN_25, Level::Low);
-
-    // ADC & capteur Hall
-    let adc = Adc::new(p.ADC, Irqs, AdcConfig::default());
-    let pin26 = Channel::new_pin(p.PIN_26, Pull::None);
-    let hall = HallAnalog::new(adc, pin26);
-
-    spawner.spawn(system_task(oled, hall)).unwrap();
-
-    // Blink LED Pico pin 25
-    loop {
-        led.toggle();
-        Timer::after_millis(200).await;
-    }
-}
-```
-
----
 
 ## Licence
 
