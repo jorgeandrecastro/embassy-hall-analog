@@ -1,7 +1,7 @@
 [package]
 edition = "2024"
 name = "embassy-hall-analog"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Jorge Andre Castro <georgeandrec@gmail.com>"]
 build = "build.rs"   # ← activer le build script
 autolib = false

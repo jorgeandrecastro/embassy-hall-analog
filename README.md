@@ -15,7 +15,7 @@ Driver async `no_std` minimaliste pour le **capteur à effet Hall linéaire anal
 
 Ce projet suit de près l'évolution de l'écosystème Embassy pour garantir le support des nouvelles puces comme la RP2350.
 
-**Dernière version stable conseillée : `0.1.0`** (ou supérieure).
+**Dernière version stable conseillée : `0.2.0`** (ou supérieure).
 
 **Important : Cette crate est compatible avec une large plage de versions (v0.4.0 à v0.10.0+).** Assurez-vous que votre projet utilise une version d'`embassy-rp` incluse dans cette plage.
 
@@ -61,21 +61,21 @@ Ajoutez la dépendance dans votre `Cargo.toml`.
 
 ```toml
 [dependencies.embassy-hall-analog]
-version = "0.1.0"
+version = "0.2.0"
 ```
 
 **Pour le RP2350A (Pico 2 A-step) — désactivez les features par défaut et activez `rp235xa` :**
 
 ```toml
 [dependencies]
-embassy-hall-analog = { version = "0.1.0", default-features = false, features = ["rp235xa"] }
+embassy-hall-analog = { version = "0.2.0", default-features = false, features = ["rp235xa"] }
 ```
 
 **Pour le RP2350B (Waveshare RP2350-PiZero, Pico 2 B-step) — désactivez les features par défaut et activez `rp235xb` :**
 
 ```toml
 [dependencies]
-embassy-hall-analog = { version = "0.1.0", default-features = false, features = ["rp235xb"] }
+embassy-hall-analog = { version = "0.2.0", default-features = false, features = ["rp235xb"] }
 ```
 
 > ⚠️ Ces trois features sont **mutuellement exclusives**. Le build échouera avec un message explicite
