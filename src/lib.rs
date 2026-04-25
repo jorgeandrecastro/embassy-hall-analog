@@ -169,7 +169,7 @@ pub const ZERO_FIELD_RAW_14BIT: u16 = 8192;
 /// - `rp235xa` / `rp235xb` → [`ZERO_FIELD_RAW_14BIT`] (8192)
 #[cfg(feature = "rp2040")]
 const ZERO_FIELD_RAW: u16 = ZERO_FIELD_RAW_12BIT;
-
+/// Attention : Vérifiez le multiplexage des pins ADC sur votre matériel pour la feature = "rp235xb".
 #[cfg(any(feature = "rp235xa", feature = "rp235xb"))]
 const ZERO_FIELD_RAW: u16 = ZERO_FIELD_RAW_14BIT;
 
@@ -246,6 +246,20 @@ impl<'d> HallAnalog<'d> {
     /// | RP235x  | 14 bits   | `0..=16383`  | ~8192  |
     ///
     /// En cas d'erreur ADC, la valeur `0` est retournée.
+    ///
+    /// # ⚠️ Note importante : Calibration matérielle
+    ///
+    /// Sur RP235x, bien que le matériel soit 14 bits, la valeur retournée 
+    /// peut être sur 12 bits (0..4095) selon la configuration du HAL Embassy.
+    /// Votre point de repos réel peut donc différer des valeurs théoriques (~2048 ou ~8192).
+    ///
+    /// **Exemple mesuré sur le matériel (RP2350A testé avec calibration)** :
+    /// - En l'absence de champ magnétique, branche sur 3.3V : **~2060** (et non 2048)
+    /// - Cette valeur dépend de la résistance interne du capteur, des variations thermiques,
+    ///   et de la stabilité de l'alimentation
+    ///
+    /// **Recommandation** : Utilisez [`HallAnalog::calibrate()`] lors du démarrage pour 
+    /// déterminer automatiquement le point de repos réel de votre installation.
     ///
     /// # Exemple
     ///

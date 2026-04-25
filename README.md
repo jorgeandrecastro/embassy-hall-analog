@@ -11,6 +11,16 @@ Driver async `no_std` minimaliste pour le **capteur à effet Hall linéaire anal
 
 ---
 
+## ⚠️ Note importante sur le RP2350B (Pico 2 Zero / 2350B)
+
+Si vous utilisez cette crate avec un RP2350B (modèle 80 pins), soyez vigilants sur le design de votre PCB. 
+
+Sur certaines cartes de développement (comme la **Waveshare Pico Zero 2350B**), les broches ADC sont multiplexées ou partagées physiquement avec le bus de données de la carte SD (QSPI/SDIO). 
+- **Symptôme :** Valeurs brutes (`read_raw`) instables, bruit important ou lecture "fantôme".
+- **Solution :** Utilisez des broches ADC isolées du trafic numérique haute fréquence ou assurez-vous qu'aucun autre périphérique ne sollicite le bus partagé pendant la lecture analogique.
+
+Le driver fonctionne parfaitement sur la **Pico 2 Standard** (RP2350A) sur les broches ADC dédiées (GP26 testé).
+
 ## 📄 Historique et Compatibilité
 
 Ce projet suit de près l'évolution de l'écosystème Embassy pour garantir le support des nouvelles puces comme la RP2350.
@@ -61,21 +71,21 @@ Ajoutez la dépendance dans votre `Cargo.toml`.
 
 ```toml
 [dependencies.embassy-hall-analog]
-version = "0.3.0"
+version = "0.3.1"
 ```
 
 **Pour le RP2350A (Pico 2 A-step) — désactivez les features par défaut et activez `rp235xa` :**
 
 ```toml
 [dependencies]
-embassy-hall-analog = { version = "0.3.0", default-features = false, features = ["rp235xa"] }
+embassy-hall-analog = { version = "0.3.1", default-features = false, features = ["rp235xa"] }
 ```
 
 **Pour le RP2350B (Waveshare RP2350-PiZero, Pico 2 B-step) — désactivez les features par défaut et activez `rp235xb` :**
 
 ```toml
 [dependencies]
-embassy-hall-analog = { version = "0.3.0", default-features = false, features = ["rp235xb"] }
+embassy-hall-analog = { version = "0.3.1", default-features = false, features = ["rp235xb"] }
 ```
 
 > ⚠️ Ces trois features sont **mutuellement exclusives**. Le build échouera avec un message explicite
@@ -93,10 +103,19 @@ embassy-hall-analog = { version = "0.3.0", default-features = false, features = 
 
 Le point de repos ADC (`ZERO_FIELD_RAW`) est sélectionné **automatiquement** selon la feature compilée :
 
-| Feature             | Résolution | Point de repos |
+| Feature             | Résolution | Point de repos théorique |
 |---------------------|-----------|----------------|
 | `rp2040`            | 12 bits   | 2048           |
 | `rp235xa` / `rp235xb` | 14 bits | 8192           |
+
+> ⚠️ **Important** : Les valeurs théoriques ne correspondent pas toujours à la réalité sur le matériel.
+> Sur RP235x, bien que le matériel soit 14 bits, la valeur retournée peut être sur 12 bits selon la configuration du HAL Embassy.
+> 
+> **Valeur réelle mesurée (RP2350A) en l'absence de champ magnétique, branche sur 3.3V : ~2060**
+>
+> Cette variation dépend de la résistance interne du capteur, des variations thermiques et de la stabilité de l'alimentation.
+>
+> **→ Utilisez la méthode `calibrate()` lors du démarrage pour déterminer le point de repos réel de votre installation.**
 
 ---
 
@@ -152,13 +171,28 @@ match sensor.read_polarity(50).await {
 > pour éviter les oscillations dues au bruit ADC.  
 > Sur RP235x (14 bits), une valeur de `200` LSB est conseillée.
 
-### Déviation signée
+### Calibration du point zéro
+
+```rust
+// Calibration avec 64 échantillons pour une grande précision
+let zero_offset = sensor.calibrate(64).await;
+
+// Ensuite, utiliser zero_offset pour les lectures précises
+let deviation = sensor.read_deviation(zero_offset).await;
+// deviation > 0 : pôle Sud | deviation < 0 : pôle Nord
+```
+
+> **Conseil** : Appelez `calibrate()` une seule fois au démarrage, dans un environnement sans champ magnétique perturbateur.
+> Cela vous donnera le point de repos réel (~2060 au lieu de ~2048 sur RP235x par exemple).
+
+### Déviation signée (approche manuelle)
 
 ```rust
 use embassy_hall_analog::{HallAnalog, ZERO_FIELD_RAW_12BIT};
 
+// Approche non recommandée (suppose un point de repos constant)
 let deviation = sensor.read_deviation(ZERO_FIELD_RAW_12BIT).await;
-// deviation > 0 : pôle Sud | deviation < 0 : pôle Nord
+// ⚠️ Cette valeur sera décalée si le point de repos réel ≠ 2048
 ```
 
 ### Conversions

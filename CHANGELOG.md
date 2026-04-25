@@ -20,6 +20,34 @@ Tous les changements notables de ce projet sont documentés dans ce fichier.
 - Toutes les API précédentes restent inchangées
 - Migration facile depuis les versions 0.2.x
 
+### 📌 Avertissements et limitations matérielles
+
+#### RP2350B (Pico 2 Zero / 80 pins)
+
+**⚠️ Important** : Sur certaines cartes de développement (notamment la **Waveshare Pico Zero 2350B**), les broches ADC sont **multiplexées ou partagées physiquement** avec le bus de données de la carte SD (QSPI/SDIO).
+
+- **Symptôme** : Valeurs brutes (`read_raw`) instables, bruit important ou lectures "fantômes"
+- **Cause racine** : Interférences dues au trafic numérique haute fréquence sur le bus partagé
+- **Solution** : 
+  - Utilisez des broches ADC isolées du trafic numérique haute fréquence
+  - Assurez-vous qu'aucun autre périphérique ne sollicite le bus partagé pendant les lectures analogiques
+  - Envisagez d'ajouter du filtrage analogique (condensateur 100 nF en parallèle)
+
+#### RP2350A (Pico 2 Standard)
+
+✅ **Fonctionne parfaitement** sur les broches ADC dédiées (GP26 testé).
+
+#### Calibration matérielle et points de repos réels
+
+**Important pour la précision** : Les points de repos théoriques (~2048 sur 12 bits, ~8192 sur 14 bits) 
+ne correspondent **pas toujours** à la réalité sur le matériel.
+
+**Valeurs réelles mesurées en absence de champ magnétique (branche sur 3.3V)** :
+- RP2350A avec calibration : **~2060** (au lieu de 2048)
+- Variation due à : résistance interne du capteur, thermique, stabilité de l'alimentation
+
+**Recommandation** : Appelez toujours `calibrate()` au démarrage pour obtenir le point de repos réel de votre installation.
+
 ---
 
 ## ⚠️ Versions antérieures (< 0.3.0)
