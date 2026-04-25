@@ -15,7 +15,7 @@ Driver async `no_std` minimaliste pour le **capteur à effet Hall linéaire anal
 
 Ce projet suit de près l'évolution de l'écosystème Embassy pour garantir le support des nouvelles puces comme la RP2350.
 
-**Dernière version stable conseillée : `0.2.0`** (ou supérieure).
+**Dernière version stable conseillée : `0.3.0`** (ou supérieure).
 
 **Important : Cette crate est compatible avec une large plage de versions (v0.4.0 à v0.10.0+).** Assurez-vous que votre projet utilise une version d'`embassy-rp` incluse dans cette plage.
 
@@ -61,21 +61,21 @@ Ajoutez la dépendance dans votre `Cargo.toml`.
 
 ```toml
 [dependencies.embassy-hall-analog]
-version = "0.2.0"
+version = "0.3.0"
 ```
 
 **Pour le RP2350A (Pico 2 A-step) — désactivez les features par défaut et activez `rp235xa` :**
 
 ```toml
 [dependencies]
-embassy-hall-analog = { version = "0.2.0", default-features = false, features = ["rp235xa"] }
+embassy-hall-analog = { version = "0.3.0", default-features = false, features = ["rp235xa"] }
 ```
 
 **Pour le RP2350B (Waveshare RP2350-PiZero, Pico 2 B-step) — désactivez les features par défaut et activez `rp235xb` :**
 
 ```toml
 [dependencies]
-embassy-hall-analog = { version = "0.2.0", default-features = false, features = ["rp235xb"] }
+embassy-hall-analog = { version = "0.3.0", default-features = false, features = ["rp235xb"] }
 ```
 
 > ⚠️ Ces trois features sont **mutuellement exclusives**. Le build échouera avec un message explicite
@@ -207,6 +207,26 @@ Le point de repos est sélectionné automatiquement selon la feature compilée  
 
 Retourne la déviation signée en LSB par rapport au point de repos fourni.
 
+### `async fn calibrate(&mut self, samples: u8) -> u16`
+
+Calibration automatique du point zéro.
+
+Exécute une moyenne sur N échantillons pour déterminer le décalage (offset) réel du capteur
+dans son environnement actuel. Utilise `embassy-time` pour insérer un délai de **100 μs**
+entre chaque lecture, permettant à l'ADC de se stabiliser et d'éviter de lire le même pic de bruit.
+
+**Exemple d'utilisation :**
+
+```rust
+// Calibration avec 64 échantillons pour une grande précision
+let zero_offset = sensor.calibrate(64).await;
+// Ensuite, utiliser zero_offset pour les lectures
+let deviation = sensor.read_deviation(zero_offset).await;
+```
+
+> **Conseil :** Appelez `calibrate()` une seule fois au démarrage,
+> dans un environnement sans champ magnétique perturbateur.
+
 ### Constantes
 
 | Constante              | Valeur | Description                         |
@@ -218,11 +238,26 @@ Retourne la déviation signée en LSB par rapport au point de repos fourni.
 
 ## Compatibilité
 
-| Dépendance   | Version     |
-|--------------|-------------|
-| `embassy-rp` | 0.4 à 0.10+ |
-| Rust edition | 2024        |
-| `no_std`     | ✓           |
+| Dépendance     | Version     |
+|----------------|-------------|
+| `embassy-rp`   | 0.4 à 0.10+ |
+| `embassy-time` | 0.3 à 0.6   |
+| Rust edition   | 2024        |
+| `no_std`       | ✓           |
+
+---
+
+## 📋 Changelog
+
+Pour un historique détaillé des changements, consultez le fichier [CHANGELOG.md](CHANGELOG.md).
+
+**Version actuelle : 0.3.0**
+- ✅ Calibration automatique du point zéro
+- ✅ Intégration de `embassy-time` pour la stabilisation ADC
+- ✅ Amélioration de la précision des mesures
+
+> **Important** : Les versions antérieures à 0.3.0 présentent des limitations critiques.
+> Consultez le [CHANGELOG.md](CHANGELOG.md) pour les détails sur les versions héritées.
 
 ---
 

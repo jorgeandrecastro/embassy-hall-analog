@@ -143,6 +143,7 @@ compile_error!(
 );
 
 use embassy_rp::adc::{Adc, Async, Channel};
+use embassy_time::Timer;
 
 // ---------------------------------------------------------------------------
 // Constantes publiques nommées explicitement (rétrocompatibilité)
@@ -339,4 +340,25 @@ impl<'d> HallAnalog<'d> {
         let raw = self.read_raw().await;
         raw as i32 - zero as i32
     }
+
+
+    /// Calibre le point zéro automatiquement.
+    ///
+    /// Exécute une moyenne sur N échantillons pour déterminer le décalage (offset)
+    /// réel du capteur dans son environnement actuel.
+    ///
+    /// # Arguments
+    /// * `samples` - Nombre d'échantillons à moyenner (ex: 64 pour une grande précision).
+   pub async fn calibrate(&mut self, samples: u8) -> u16 {
+    let mut total: u32 = 0;
+    for _ in 0..samples {
+        total += self.read_raw().await as u32;
+        // On attend un tout petit peu entre chaque lecture pour laisser 
+        // l'ADC se stabiliser et éviter de lire le même pic de bruit.
+        Timer::after_micros(100).await; 
+    }
+    // La division se fait à la fin, et c'est cette valeur qui est retournée.
+    (total / samples as u32) as u16
+}
+    
 }
