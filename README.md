@@ -25,10 +25,20 @@ Le driver fonctionne parfaitement sur la **Pico 2 Standard** (RP2350A) sur les b
 
 Ce projet suit de près l'évolution de l'écosystème Embassy pour garantir le support des nouvelles puces comme la RP2350.
 
-**Dernière version stable conseillée : `0.3.0`** (ou supérieure).
+**Dernière version stable conseillée : `0.4.0`** (ou supérieure).
 
-**Important : Cette crate est compatible avec une large plage de versions (v0.4.0 à v0.10.0+).** Assurez-vous que votre projet utilise une version d'`embassy-rp` incluse dans cette plage.
+**Update Version 0.4.0**:
+- Remplacement des plages de compatibilité par des versions explicites afin d’assurer une meilleure stabilité et reproductibilité des builds.
 
+### Dépendances
+
+```toml
+[dependencies]
+
+embassy-rp = "0.10"
+embassy-time = "0.5"
+
+```
 Changelog : Pour voir le détail des changements, consultez le fichier `CHANGELOG.md`.
 
 ---
@@ -49,7 +59,7 @@ Ce driver encapsule la lecture ADC asynchrone Embassy et expose une API simple p
 
 ## Câblage
 
-Connexion directe — aucune résistance externe nécessaire (le module est auto-polarisé) :
+Connexion directe  aucune résistance externe nécessaire (le module est auto-polarisé) :
 
 ```text
 Module Hall OPEN-SMART        RP2040 / RP235x
@@ -67,25 +77,25 @@ Module Hall OPEN-SMART        RP2040 / RP235x
 
 Ajoutez la dépendance dans votre `Cargo.toml`.
 
-**Pour le RP2040 (Pico 1) — feature `rp2040` activée par défaut :**
+**Pour le RP2040 (Pico 1) : feature `rp2040` activée par défaut :**
 
 ```toml
 [dependencies.embassy-hall-analog]
-version = "0.3.1"
+version = "0.4.0"
 ```
 
-**Pour le RP2350A (Pico 2 A-step) — désactivez les features par défaut et activez `rp235xa` :**
+**Pour le RP2350A (Pico 2 A-step) : désactivez les features par défaut et activez `rp235xa` :**
 
 ```toml
 [dependencies]
-embassy-hall-analog = { version = "0.3.1", default-features = false, features = ["rp235xa"] }
+embassy-hall-analog = { version = "0.4.0", default-features = false, features = ["rp235xa"] }
 ```
 
-**Pour le RP2350B (Waveshare RP2350-PiZero, Pico 2 B-step) — désactivez les features par défaut et activez `rp235xb` :**
+**Pour le RP2350B (Waveshare RP2350-PiZero, Pico 2 B-step) : désactivez les features par défaut et activez `rp235xb` :**
 
 ```toml
 [dependencies]
-embassy-hall-analog = { version = "0.3.1", default-features = false, features = ["rp235xb"] }
+embassy-hall-analog = { version = "0.4.0", default-features = false, features = ["rp235xb"] }
 ```
 
 > ⚠️ Ces trois features sont **mutuellement exclusives**. Le build échouera avec un message explicite
@@ -274,8 +284,8 @@ let deviation = sensor.read_deviation(zero_offset).await;
 
 | Dépendance     | Version     |
 |----------------|-------------|
-| `embassy-rp`   | 0.4 à 0.10+ |
-| `embassy-time` | 0.3 à 0.6   |
+| `embassy-rp`   | 0.10        |
+| `embassy-time` | 0.5         |
 | Rust edition   | 2024        |
 | `no_std`       | ✓           |
 
@@ -285,7 +295,7 @@ let deviation = sensor.read_deviation(zero_offset).await;
 
 Pour un historique détaillé des changements, consultez le fichier [CHANGELOG.md](CHANGELOG.md).
 
-**Version actuelle : 0.3.0**
+**Version : 0.3.0**
 - ✅ Calibration automatique du point zéro
 - ✅ Intégration de `embassy-time` pour la stabilisation ADC
 - ✅ Amélioration de la précision des mesures

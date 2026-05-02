@@ -2,6 +2,23 @@
 
 Tous les changements notables de ce projet sont documentés dans ce fichier.
 
+
+
+## [0.4.0] - 2026-05-02
+
+- Remplacement des plages de compatibilité par des versions explicites afin d’assurer une meilleure stabilité et reproductibilité des builds.
+
+### Dépendances
+
+```toml
+[dependencies]
+
+embassy-rp = "0.10"
+embassy-time = "0.5"
+
+```
+
+
 ## [0.3.0] - 2026-04-25
 
 ### ✨ Ajouts
@@ -84,7 +101,7 @@ let zero_offset = sensor.calibrate(64).await;  // Une seule fois au démarrage
 let deviation = sensor.read_deviation(zero_offset).await;  // Lectures précises
 ```
 
-**Les versions 0.3.0+ sont fortement recommandées pour tout nouveau projet.**
+**Les versions 0.4 + sont fortement recommandées pour tout nouveau projet.**
 
 ---
 
